@@ -104,43 +104,7 @@
       (gltf) => {
         const model = gltf.scene;
         scene.add(model);
-        // 找到 Material_17，複製給 Material_0 的麵包
-        let breadMaterial = null;
-        
-        // 先找到有貼圖的麵包材質
-        model.traverse((obj) => {
-          if (!obj.isMesh) return;
-        
-          const materials = Array.isArray(obj.material)
-            ? obj.material
-            : [obj.material];
-        
-          for (const mat of materials) {
-            if (mat && mat.name === "Material_17") {
-              breadMaterial = mat;
-              console.log("找到來源材質:", mat.name);
-            }
-          }
-        });
-        
-        // 再把它套到白色麵包 Material_0
-        if (breadMaterial) {
-          model.traverse((obj) => {
-            if (!obj.isMesh) return;
-        
-            if (
-              !Array.isArray(obj.material) &&
-              obj.material &&
-              obj.material.name === "Material_0"
-            ) {
-              obj.material = breadMaterial.clone();
-              obj.material.needsUpdate = true;
-        
-              console.log("成功套用到:", obj.name);
-            }
-          });
-        }
-
+       
         // 隱藏 Blender 匯出的地板、相機和燈光
         model.traverse((obj) => {
           if (obj.name === "平面") obj.visible = false;
