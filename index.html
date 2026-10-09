@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>奶油麵包 3D 展示</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f8f0e6;
+      font-family: Arial, sans-serif;
+      color: #633a26;
+    }
+    header {
+      padding: 24px;
+      text-align: center;
+    }
+    h1 { margin: 0 0 8px; }
+    p { margin: 0; }
+    #viewer {
+      width: 100%;
+      height: 75vh;
+      min-height: 400px;
+      touch-action: none;
+    }
+    #status {
+      text-align: center;
+      padding: 12px;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <header>
+    <h1>奶油麵包</h1>
+    <p>拖曳旋轉視角・滾輪縮放</p>
+  </header>
+
+  <div id="viewer"></div>
+  <div id="status">正在載入 3D 模型...</div>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const container = document.getElementById("viewer");
+    const status = document.getElementById("status");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#f8f0e6");
+
+    const camera = new THREE.PerspectiveCamera(
+      40,
+      container.clientWidth / container.clientHeight,
+      0.01,
+      100000
+    );
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true
+    });
+
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.4;
+
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xb99c80, 2));
+
+    function addLight(x, y, z, power) {
+      const light = new THREE.DirectionalLight(0xffffff, power);
+      light.position.set(x, y, z);
+      scene.add(light);
+    }
+
+    addLight(5, 8, 6, 3);
+    addLight(-5, 3, -4, 1.5);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const clock = new THREE.Clock();
+    let mixer;
+
+    const loader = new GLTFLoader();
+
+    loader.load(
+      "./bread.glb",
+      (gltf) => {
+        const model = gltf.scene;
+        scene.add(model);
+
+        // 隱藏 Blender 匯出的地板、相機和燈光
+        model.traverse((obj) => {
+          if (obj.name === "平面") obj.visible = false;
+
+          if (obj.isCamera || obj.isLight) {
+            obj.visible = false;
+          }
+        });
+
+        // 只用可見的模型網格計算視角
+        const bounds = new THREE.Box3();
+
+        model.updateMatrixWorld(true);
+        model.traverse((obj) => {
+          if (obj.isMesh && obj.visible) {
+            bounds.expandByObject(obj);
+          }
+        });
+
+        if (!bounds.isEmpty()) {
+          const center = bounds.getCenter(new THREE.Vector3());
+          const size = bounds.getSize(new THREE.Vector3());
+          const maxSize = Math.max(size.x, size.y, size.z);
+
+          controls.target.copy(center);
+          camera.position.set(
+            center.x + maxSize * 1.2,
+            center.y + maxSize * 0.7,
+            center.z + maxSize * 1.8
+          );
+          camera.near = Math.max(maxSize / 1000, 0.001);
+          camera.far = Math.max(maxSize * 100, 100);
+          camera.updateProjectionMatrix();
+        }
+
+        if (gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(model);
+          gltf.animations.forEach((clip) => {
+            mixer.clipAction(clip).play();
+          });
+        }
+
+        status.textContent = "模型載入完成";
+      },
+      undefined,
+      (error) => {
+        console.error(error);
+        status.textContent = "載入失敗，請確認 bread.glb 已上傳";
+      }
+    );
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", () => {
+      camera.aspect =
+        container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(
+        container.clientWidth,
+        container.clientHeight
+      );
+    });
+  </script>
+</body>
+</html>
