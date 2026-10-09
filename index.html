@@ -105,6 +105,21 @@
         const model = gltf.scene;
         scene.add(model);
 
+        // 把有貼圖的麵包材質複製給白色麵包
+        const breadWithTexture = model.getObjectByName("四面體球 1.001");
+        const whiteBread = model.getObjectByName("四面體球 1");
+        
+        if (breadWithTexture && whiteBread) {
+          whiteBread.material = breadWithTexture.material.clone();
+        
+          console.log("已把材質複製到第二顆麵包");
+        } else {
+          console.log("找不到麵包物件", {
+            breadWithTexture,
+            whiteBread
+          });
+        }
+
         // 隱藏 Blender 匯出的地板、相機和燈光
         model.traverse((obj) => {
           if (obj.name === "平面") obj.visible = false;
