@@ -104,19 +104,40 @@
       (gltf) => {
         const model = gltf.scene;
         scene.add(model);
-
-        // 把有貼圖的麵包材質複製給白色麵包
-        const breadWithTexture = model.getObjectByName("四面體球 1.001");
-        const whiteBread = model.getObjectByName("四面體球 1");
+        // 找到 Material_17，複製給 Material_0 的麵包
+        let breadMaterial = null;
         
-        if (breadWithTexture && whiteBread) {
-          whiteBread.material = breadWithTexture.material.clone();
+        // 先找到有貼圖的麵包材質
+        model.traverse((obj) => {
+          if (!obj.isMesh) return;
         
-          console.log("已把材質複製到第二顆麵包");
-        } else {
-          console.log("找不到麵包物件", {
-            breadWithTexture,
-            whiteBread
+          const materials = Array.isArray(obj.material)
+            ? obj.material
+            : [obj.material];
+        
+          for (const mat of materials) {
+            if (mat && mat.name === "Material_17") {
+              breadMaterial = mat;
+              console.log("找到來源材質:", mat.name);
+            }
+          }
+        });
+        
+        // 再把它套到白色麵包 Material_0
+        if (breadMaterial) {
+          model.traverse((obj) => {
+            if (!obj.isMesh) return;
+        
+            if (
+              !Array.isArray(obj.material) &&
+              obj.material &&
+              obj.material.name === "Material_0"
+            ) {
+              obj.material = breadMaterial.clone();
+              obj.material.needsUpdate = true;
+        
+              console.log("成功套用到:", obj.name);
+            }
           });
         }
 
