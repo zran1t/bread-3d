@@ -76,11 +76,17 @@
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMappingExposure = 1.05;
 
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xb99c80, 2));
+    scene.add(
+      new THREE.HemisphereLight(
+        0xfff7eb,
+        0x796554,
+        1.3
+      )
+    );
 
     function addLight(x, y, z, power) {
       const light = new THREE.DirectionalLight(0xffffff, power);
@@ -88,8 +94,8 @@
       scene.add(light);
     }
 
-    addLight(5, 8, 6, 3);
-    addLight(-5, 3, -4, 1.5);
+    addLight(4, 7, 5, 2.2);
+    addLight(-4, 3, 2, 0.8);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -104,7 +110,37 @@
       (gltf) => {
         const model = gltf.scene;
         scene.add(model);
-       
+        // ===== 網頁版材質 =====
+
+        const breadMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xd58a32,
+          roughness: 0.48,
+          metalness: 0.0,
+          clearcoat: 0.08,
+          clearcoatRoughness: 0.65
+        });
+        
+        const creamMaterial = new THREE.MeshStandardMaterial({
+          color: 0xf2eadb,
+          roughness: 0.72,
+          metalness: 0.0
+        });
+        
+        model.traverse((obj) => {
+          if (!obj.isMesh) return;
+        
+          // 兩個麵包外殼
+          if (obj.name.startsWith("四面體球 1")) {
+            obj.material = breadMaterial.clone();
+          }
+        
+          // 兩個奶油
+          if (obj.name.startsWith("四面體球 2")) {
+            obj.material = creamMaterial.clone();
+          }
+        });
+
+        
         // 隱藏 Blender 匯出的地板、相機和燈光
         model.traverse((obj) => {
           if (obj.name === "平面") obj.visible = false;
